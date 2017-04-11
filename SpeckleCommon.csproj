@@ -7,8 +7,8 @@
     <ProjectGuid>{D38D3139-5861-4704-9AA5-950253D96D73}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SpeckleClient</RootNamespace>
-    <AssemblyName>SpeckleClient</AssemblyName>
+    <RootNamespace>SpeckleCommon</RootNamespace>
+    <AssemblyName>SpeckleCommon</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
