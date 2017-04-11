@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using WebSocketSharp;
 
-namespace SpeckleClient
+namespace SpeckleCommon
 {
     public class SpeckleSender
     {

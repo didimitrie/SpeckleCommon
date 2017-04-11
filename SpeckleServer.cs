@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SpeckleClient
+namespace SpeckleCommon
 {
     /// <summary>
     /// Helper class for speckle functionality.

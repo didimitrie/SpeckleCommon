@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SpeckleClient
+namespace SpeckleCommon
 {
     /// <summary>
     /// Defines a speckle layer.
