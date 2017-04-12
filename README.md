@@ -1,5 +1,7 @@
 # SpeckleCommon
-Base .NET Speckle Clients + Speckle Converters
+Base .NET Speckle Clients + Speckle Converters. 
+
+If you are implementing clients yourself, you can reference this from nuget: https://www.nuget.org/packages/Speckle.SpeckleCommon/
 
 ## SpeckleConverter
 This is the base half-virtual class from which you should inherit/override in order to create your own data & geometry converters to speckle objects.
