@@ -7,9 +7,10 @@ using System.Threading.Tasks;
 
 namespace SpeckleCommon
 {
+    [Serializable]
     public class SpeckleObject
     {
-        public string type;
+        public string type { get; set; }
 
         public void setType(string _type)
         {
@@ -17,6 +18,7 @@ namespace SpeckleCommon
         }
     }
 
+    [Serializable]
     public class SpeckleByteArray : SpeckleObject
     {
         public byte[] value;
@@ -28,6 +30,7 @@ namespace SpeckleCommon
         }
     }
 
+    [Serializable]
     public class SpeckleBoolean : SpeckleObject
     {
         public bool value;
@@ -39,6 +42,7 @@ namespace SpeckleCommon
         }
     }
 
+    [Serializable]
     public class SpeckleNumber : SpeckleObject
     {
         public double value;
@@ -50,6 +54,7 @@ namespace SpeckleCommon
         }
     }
 
+    [Serializable]
     public class SpeckleString : SpeckleObject
     {
         public string value;
@@ -61,6 +66,7 @@ namespace SpeckleCommon
         }
     }
 
+    [Serializable]
     public class SpeckleInterval : SpeckleObject
     {
         public double start, end;
@@ -72,6 +78,7 @@ namespace SpeckleCommon
         }
     }
 
+    [Serializable]
     public class SpeckleInterval2d : SpeckleObject
     {
         public SpeckleInterval u, v;
@@ -83,6 +90,7 @@ namespace SpeckleCommon
         }
     }
 
+    [Serializable]
     public class SpecklePoint : SpeckleObject
     {
         public double[] value = new double[3];
@@ -93,7 +101,7 @@ namespace SpeckleCommon
         }
     }
 
-
+    [Serializable]
     public class SpeckleVector : SpeckleObject
     {
         public double[] value = new double[3];
@@ -106,6 +114,7 @@ namespace SpeckleCommon
 
     }
 
+    [Serializable]
     public class SpecklePlane : SpeckleObject
     {
         public SpecklePoint origin;
@@ -121,6 +130,7 @@ namespace SpeckleCommon
         }
     }
 
+    [Serializable]
     public class SpeckleLine : SpeckleObject
     {
         public SpecklePoint start, end;
@@ -132,6 +142,7 @@ namespace SpeckleCommon
         }
     }
 
+    [Serializable]
     public class SpeckleRectangle : SpeckleObject
     {
         public SpecklePoint a, b, c, d;
@@ -146,6 +157,7 @@ namespace SpeckleCommon
         }
     }
 
+    [Serializable]
     public class SpecklePolyline : SpeckleObject
     {
         public double[] value;
@@ -155,27 +167,63 @@ namespace SpeckleCommon
         {
             type = "Polyline";
             value = coords;
+            hash = type + "." + SpeckleConverter.getHash(coords);
         }
     }
 
+
+    [Serializable]
+    public class SpeckleCurve: SpeckleObject
+    {
+        public string hash;
+        public SpecklePolyline displayValue;
+        public string base64;
+        public string provenance;
+
+        public SpeckleCurve(SpecklePolyline polylineEquivalent, string base64, string provenance)
+        {
+            type = "Curve";
+            this.displayValue = polylineEquivalent;
+            this.base64 = base64;
+            this.provenance = provenance;
+            this.hash = type + "." + SpeckleConverter.getHash(polylineEquivalent.value);
+        }
+    }
+
+    [Serializable]
     public class SpeckleMesh : SpeckleObject
     {
-        public dynamic value;
-        public string hash;
+        public string hash { get; set;  }
+        public double[] vertices { get; set; }
+        public int[] faces { get; set; }
+        public int[] colors { get; set; }
 
-        public SpeckleMesh(double[] vertices, double[] faces, int[] colors)
+        public SpeckleMesh(double[] vertices, int[] faces, int[] colors)
         {
             type = "Mesh";
-            value = new ExpandoObject();
-            value.vertices = vertices;
-            value.faces = faces;
-            value.colors = colors;
+            this.vertices = vertices;
+            this.faces = faces;
+            this.colors = colors;
+            hash = type + "." + SpeckleConverter.getHash(this);
         }
     }
 
+    [Serializable]
     public class SpeckleBrep : SpeckleObject
     {
+        public string hash { get; set; }
+        public SpeckleMesh displayValue;
+        public string base64;
+        public string provenance;
 
+        public SpeckleBrep(SpeckleMesh mesh, string base64, string provenance)
+        {
+            type = "Brep";
+            this.displayValue = mesh;
+            this.base64 = base64;
+            this.provenance = provenance;
+            this.hash = type + "." + SpeckleConverter.getHash(mesh);
+        }
     }
 
 }

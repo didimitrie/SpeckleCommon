@@ -291,7 +291,7 @@ namespace SpeckleCommon
                 }
 
                 var castObject = converter.encodeObject(response.data, objectProperties);
-                addToCache((string)obj.hash, castObject);
+                //addToCache((string)obj.hash, castObject);
 
                 callback(castObject, index);
             });

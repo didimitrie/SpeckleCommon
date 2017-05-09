@@ -115,6 +115,26 @@ namespace SpeckleCommon
             }
         }
 
+        public static string getHash(object obj)
+        {
+            byte[] b = getBytes(obj);
+            return getHash(b);
+        }
+
+        public static string getHash(byte[] b)
+        {
+            byte[] hash;
+            using (System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create())
+            {
+                hash = md5.ComputeHash(b);
+                StringBuilder sb = new StringBuilder();
+                foreach (byte bbb in hash)
+                    sb.Append(bbb.ToString("X2"));
+
+                return sb.ToString().ToLower();
+            }
+        }
+
         /// <summary>
         /// Hashes a given string using md5. Used to get object hashes. 
         /// </summary>
