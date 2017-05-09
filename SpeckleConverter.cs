@@ -13,6 +13,10 @@ namespace SpeckleCommon
     [Serializable]
     public abstract class SpeckleConverter
     {
+
+        public string[] hashedTypes = new string[] { "Polyline", "Curve", "Mesh", "Brep" };
+        public string[] encodedTypes = new string[] { "Curve", "Brep" };
+
         public SpeckleConverter()
         {
         }
