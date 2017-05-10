@@ -272,11 +272,11 @@ namespace SpeckleCommon
                 return;
             }
 
-            if (cache.ContainsKey(obj.hash))
-            {
-                callback(cache[obj.hash], index);
-                return;
-            }
+            //if (cache.ContainsKey(obj.hash))
+            //{
+            //    callback(cache[obj.hash], index);
+            //    return;
+            //}
 
             var type = "";
             if (converter.encodedTypes.Contains((string)obj.type))
@@ -291,6 +291,7 @@ namespace SpeckleCommon
                 }
 
                 var castObject = converter.encodeObject(response.data, objectProperties);
+
                 //addToCache((string)obj.hash, castObject);
 
                 callback(castObject, index);
