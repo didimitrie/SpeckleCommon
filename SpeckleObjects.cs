@@ -182,6 +182,23 @@ namespace SpeckleCommon
     }
 
     [Serializable]
+    public class SpeckleCircle : SpeckleObject
+    {
+        public double radius { get; set; }
+        public SpecklePoint center { get; set; }
+        public SpeckleVector normal { get; set; }
+
+        public SpeckleCircle() { }
+        public SpeckleCircle(SpecklePoint center, SpeckleVector normal, double radius)
+        {
+            type = "Circle";
+            this.center = center;
+            this.normal = normal;
+            this.radius = radius;
+        }
+    }
+
+    [Serializable]
     public class SpecklePolyline : SpeckleObject
     {
         public double[] value { get; set; }
