@@ -96,9 +96,6 @@ namespace SpeckleCommon
             };
 
             converter = _converter;
-            converter.encodeObjectsToNative = description.encodeNative;
-            converter.encodeObjectsToSpeckle = description.encodeSpeckle;
-
         }
 
         #endregion
@@ -169,8 +166,6 @@ namespace SpeckleCommon
                         OnError?.Invoke(this, new SpeckleEventArgs("Failed to update stream."));
                         return;
                     }
-
-                    converter.commitCache();
                     OnDataSent?.Invoke(this, new SpeckleEventArgs("Stream was updated."));
                 });
                 DataSender.Stop();
@@ -346,9 +341,7 @@ namespace SpeckleCommon
                 restEndpoint = server.restEndpoint,
                 wsEndpoint = server.wsEndpoint,
                 streamId = server.streamId,
-                token = server.token,
-                encodeNative = converter.encodeObjectsToNative,
-                encodeSpeckle = converter.encodeObjectsToSpeckle
+                token = server.token
             };
 
             return JsonConvert.SerializeObject(description);

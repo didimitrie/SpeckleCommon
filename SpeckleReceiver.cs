@@ -79,8 +79,6 @@ namespace SpeckleCommon
             server = new SpeckleServer((string)description.restEndpoint, (string)description.token, (string)description.streamId);
 
             converter = _converter;
-            converter.encodeObjectsToNative = description.encodeNative;
-            converter.encodeObjectsToSpeckle = description.encodeSpeckle;
 
             server.OnError += (sender, e) =>
             {
@@ -268,17 +266,17 @@ namespace SpeckleCommon
 
         public void getObject(dynamic obj, dynamic objectProperties, int index, Action<object, int> callback)
         {
-            if (converter.nonHashedTypes.Contains((string)obj.type))
+            if (!converter.hashedTypes.Contains((string)obj.type))
             {
                 callback(converter.encodeObject(obj, objectProperties), index);
                 return;
             }
 
-            if (cache.ContainsKey(obj.hash))
-            {
-                callback(cache[obj.hash], index);
-                return;
-            }
+            //if (cache.ContainsKey(obj.hash))
+            //{
+            //    callback(cache[obj.hash], index);
+            //    return;
+            //}
 
             var type = "";
             if (converter.encodedTypes.Contains((string)obj.type))
@@ -293,7 +291,8 @@ namespace SpeckleCommon
                 }
 
                 var castObject = converter.encodeObject(response.data, objectProperties);
-                addToCache((string)obj.hash, castObject);
+
+                //addToCache((string)obj.hash, castObject);
 
                 callback(castObject, index);
             });
@@ -364,9 +363,7 @@ namespace SpeckleCommon
                 restEndpoint = server.restEndpoint,
                 wsEndpoint = server.wsEndpoint,
                 streamId = server.streamId,
-                token = server.token,
-                encodeNative = converter.encodeObjectsToNative,
-                encodeSpeckle = converter.encodeObjectsToSpeckle
+                token = server.token
             };
 
             return JsonConvert.SerializeObject(description);
