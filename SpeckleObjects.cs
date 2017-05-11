@@ -199,6 +199,23 @@ namespace SpeckleCommon
     }
 
     [Serializable]
+    public class SpeckleBox : SpeckleObject
+    {
+        public SpecklePlane basePlane;
+        public SpeckleInterval xSize, ySize, zSize;
+
+        public SpeckleBox() { }
+        public SpeckleBox(SpecklePlane basePlane, SpeckleInterval xSize, SpeckleInterval ySize, SpeckleInterval zSize)
+        {
+            type = "Box";
+            this.basePlane = basePlane;
+            this.xSize = xSize;
+            this.ySize = ySize;
+            this.zSize = zSize;
+        }
+    }
+
+    [Serializable]
     public class SpecklePolyline : SpeckleObject
     {
         public double[] value { get; set; }
