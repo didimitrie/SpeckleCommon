@@ -51,6 +51,8 @@ namespace SpeckleCommon
         public event SpeckleEvents OnError;
 
 
+        SessionCache myCache;
+
         #region constructors
 
         /// <summary>
@@ -62,6 +64,8 @@ namespace SpeckleCommon
             converter = _converter;
 
             server = new SpeckleServer(apiUrl, token);
+
+            myCache = new SessionCache();
 
             this.server.OnError += (sender, e) =>
             {
@@ -84,6 +88,7 @@ namespace SpeckleCommon
 
             server = new SpeckleServer((string)description.restEndpoint, (string)description.token, (string)description.streamId);
 
+            myCache = new SessionCache();
 
             this.server.OnError += (sender, e) =>
             {
@@ -154,18 +159,43 @@ namespace SpeckleCommon
                 Debug.WriteLine("SPKSENDER: Sending data payload.");
 
                 dynamic x = new ExpandoObject();
-                x.objects = converter.convert(this.objects);
+                List<SpeckleObject> convertedObjs = converter.convert(this.objects);
+                List<SpeckleObject> payload = new List<SpeckleObject>();
+                convertedObjs.All(o =>
+                {
+                    if (o.hash == null)
+                    {
+                        payload.Add(o);
+                    } else 
+                    if (myCache.isInCache(o.hash))
+                    {
+                        payload.Add(new SpeckleObject(o.type, o.hash));
+                    }
+                    else
+                    {
+                        payload.Add(o);
+                        myCache.addToStage(o);
+                    }
+                    return true;
+                });
+
+
+                x.objects = payload;
                 x.objectProperties = converter.getObjectProperties(this.objects);
                 x.layers = layers;
                 x.streamName = name;
 
                 server.updateStream(x as ExpandoObject, (success, data) =>
                 {
-                    if(!success)
+                    if (!success)
                     {
                         OnError?.Invoke(this, new SpeckleEventArgs("Failed to update stream."));
                         return;
                     }
+                    
+                    // only commit to the cache if we had a positive res from the api
+                    myCache.commitStage();
+
                     OnDataSent?.Invoke(this, new SpeckleEventArgs("Stream was updated."));
                 });
                 DataSender.Stop();

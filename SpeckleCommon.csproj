@@ -54,6 +54,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SessionCache.cs" />
     <Compile Include="SpeckleConverter.cs" />
     <Compile Include="SpeckleObjects.cs" />
     <Compile Include="SpeckleReceiver.cs" />
