@@ -11,21 +11,16 @@ namespace SpeckleCommon
     public class SpeckleObject
     {
         public string type { get; set; }
-    }
+        public string hash { get; set; }
 
-    [Serializable]
-    public class SpeckleByteArray : SpeckleObject
-    {
-        public byte[] value { get; set; }
-
-        public SpeckleByteArray() { }
-
-        public SpeckleByteArray(byte[] arr)
+        public SpeckleObject() { }
+        public SpeckleObject(string type, string hash)
         {
-            type = "Bytearray";
-            value = arr;
+            this.type = type; this.hash = hash;
         }
     }
+
+    //public
 
     [Serializable]
     public class SpeckleBoolean : SpeckleObject
@@ -219,7 +214,6 @@ namespace SpeckleCommon
     public class SpecklePolyline : SpeckleObject
     {
         public double[] value { get; set; }
-        public string hash { get; set; }
 
         public SpecklePolyline() { }
 
@@ -235,7 +229,6 @@ namespace SpeckleCommon
     [Serializable]
     public class SpeckleCurve: SpeckleObject
     {
-        public string hash { get; set; }
         public SpecklePolyline displayValue { get; set; }
         public string base64 { get; set; }
         public string provenance { get; set; }
@@ -255,7 +248,6 @@ namespace SpeckleCommon
     [Serializable]
     public class SpeckleMesh : SpeckleObject
     {
-        public string hash { get; set;  }
         public double[] vertices { get; set; }
         public int[] faces { get; set; }
         public int[] colors { get; set; }
@@ -275,7 +267,6 @@ namespace SpeckleCommon
     [Serializable]
     public class SpeckleBrep : SpeckleObject
     {
-        public string hash { get; set; }
         public SpeckleMesh displayValue { get; set; }
         public string base64 { get; set; }
         public string provenance { get; set; }
