@@ -163,19 +163,25 @@ namespace SpeckleCommon
                 List<SpeckleObject> payload = new List<SpeckleObject>();
                 convertedObjs.All(o =>
                 {
-                    if (o.hash == null)
+                    if(o == null)
                     {
+                        payload.Add(new SpeckleObject("invalid_object", ""));
+                        return true;
+                    }
+                    if (o.hash == null)
                         payload.Add(o);
-                    } else 
+                    else
                     if (myCache.isInCache(o.hash))
                     {
-                        payload.Add(new SpeckleObject(o.type, o.hash));
+                        if (converter.encodedTypes.Contains(o.type)) // need to add provenance
+                            payload.Add(new SpeckleObject(o.type, o.hash));
                     }
                     else
                     {
                         payload.Add(o);
-                        myCache.addToStage(o);
+                        myCache.addToStage(o.hash, o);
                     }
+
                     return true;
                 });
 
@@ -192,7 +198,7 @@ namespace SpeckleCommon
                         OnError?.Invoke(this, new SpeckleEventArgs("Failed to update stream."));
                         return;
                     }
-                    
+
                     // only commit to the cache if we had a positive res from the api
                     myCache.commitStage();
 

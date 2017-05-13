@@ -20,23 +20,23 @@ namespace SpeckleCommon
     {
         HashSet<string> cacheHashes;
         HashSet<string> stageHashes;
-        Dictionary<string, SpeckleObject> cacheObjects;
-        Dictionary<string, SpeckleObject> stagedObjects;
+        Dictionary<string, object> cacheObjects;
+        Dictionary<string, object> stagedObjects;
 
         public SessionCache()
         {
             cacheHashes = new HashSet<string>();
             stageHashes = new HashSet<string>();
-            cacheObjects = new Dictionary<string, SpeckleObject>();
-            stagedObjects = new Dictionary<string, SpeckleObject>();
+            cacheObjects = new Dictionary<string, object>();
+            stagedObjects = new Dictionary<string, object>();
         }
 
         public bool isInCache(string hash)
         {
-            return cacheHashes.Contains(hash) || stageHashes.Contains(hash);
+            return cacheHashes.Contains(hash);
         }
 
-        public bool getFromCache(string hash, ref SpeckleObject obj)
+        public bool getFromCache(string hash, ref object obj)
         {
             if (cacheHashes.Contains(hash))
             {
@@ -46,10 +46,16 @@ namespace SpeckleCommon
             return false;
         }
 
-        public void addToStage(SpeckleObject o)
+        public void addToStage(string hash, object o)
         {
-            stageHashes.Add(o.hash);
-            stagedObjects.Add(o.hash, o);
+            if (stageHashes.Add(hash))
+                stagedObjects.Add(hash, o);
+        }
+
+        public void addToCache(string hash, object o)
+        {
+            if (cacheHashes.Add(hash))
+                cacheObjects.Add(hash, o);
         }
 
         public void commitStage()
@@ -58,7 +64,7 @@ namespace SpeckleCommon
             stageHashes = new HashSet<string>();
 
             cacheObjects.Union(stagedObjects);
-            stagedObjects = new Dictionary<string, SpeckleObject>();
+            stagedObjects = new Dictionary<string, object>();
         }
     }
 }

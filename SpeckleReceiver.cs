@@ -21,9 +21,7 @@ namespace SpeckleCommon
         SpeckleConverter converter;
 
         // cache:
-        Dictionary<string, object> cache;
-        List<string> cacheKeys;
-        int maxCacheEl = 10000;
+        SessionCache myCache;
 
         //timers:
         int reconnDebounceInterval = 1000;
@@ -58,6 +56,8 @@ namespace SpeckleCommon
         {
             converter = _converter;
 
+            myCache = new SessionCache();
+
             server = new SpeckleServer(apiUrl, token, streamId);
             server.OnError += (sender, e) =>
             {
@@ -72,13 +72,12 @@ namespace SpeckleCommon
 
         public SpeckleReceiver(string serialisedObject, SpeckleConverter _converter)
         {
-            // TO MASSIVE DO
-            // LOL
-
             dynamic description = JsonConvert.DeserializeObject(serialisedObject);
             server = new SpeckleServer((string)description.restEndpoint, (string)description.token, (string)description.streamId);
 
             converter = _converter;
+
+            myCache = new SessionCache();
 
             server.OnError += (sender, e) =>
             {
@@ -97,9 +96,6 @@ namespace SpeckleCommon
 
         private void setup()
         {
-            cache = new Dictionary<string, object>();
-            cacheKeys = new List<string>();
-
             server.getStream((success, response) =>
             {
                 if (!success)
@@ -233,9 +229,6 @@ namespace SpeckleCommon
                 return;
             }
 
-            //List<object> castObjects = new List<object>((int) liveUpdate.objects.Count);
-            //for (int i = 0; i < castObjects.Capacity; i++) castObjects.Add("this shouldn't be here.");
-
             object[] castObjects = new object[(int)liveUpdate.objects.Count];
 
 
@@ -272,17 +265,16 @@ namespace SpeckleCommon
                 return;
             }
 
-            //if (cache.ContainsKey(obj.hash))
-            //{
-            //    callback(cache[obj.hash], index);
-            //    return;
-            //}
 
-            var type = "";
-            if (converter.encodedTypes.Contains((string)obj.type))
-                type = "native";
+            if (myCache.isInCache((string)obj.hash))
+            {
+                object cachedObj = null;
+                myCache.getFromCache((string)obj.hash, ref cachedObj);
+                callback(cachedObj, index);
+                return;
+            }
 
-            server.getGeometry((string)obj.hash, type, (success, response) =>
+            server.getGeometry((string)obj.hash, converter.encodedTypes.Contains((string)obj.type) ? "native":"", (success, response) =>
             {
                 if(!success)
                 {
@@ -292,34 +284,10 @@ namespace SpeckleCommon
 
                 var castObject = converter.encodeObject(response.data, objectProperties);
 
-                //addToCache((string)obj.hash, castObject);
+                myCache.addToCache((string)obj.hash, castObject);
 
                 callback(castObject, index);
             });
-        }
-
-        private void addToCache(string hash, object obj)
-        {
-            var cacheAdded = false;
-            try
-            {
-                cache.Add(hash, obj);
-                cacheAdded = true;
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("Cache already contained said object." + e.ToString());
-            };
-
-            if (cacheAdded)
-                cacheKeys.Add((string)hash);
-
-            if (cache.Count >= maxCacheEl)
-            {
-                cache.Remove(cacheKeys.First());
-                cacheKeys.RemoveAt(0);
-            }
-
         }
 
         public string getStreamId()
