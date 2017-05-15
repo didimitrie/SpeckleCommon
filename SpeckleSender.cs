@@ -173,7 +173,6 @@ namespace SpeckleCommon
                     else
                     if (myCache.isInCache(o.hash))
                     {
-                        if (converter.encodedTypes.Contains(o.type)) // need to add provenance
                             payload.Add(new SpeckleObject(o.type, o.hash));
                     }
                     else

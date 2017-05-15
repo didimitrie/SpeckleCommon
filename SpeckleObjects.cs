@@ -20,8 +20,6 @@ namespace SpeckleCommon
         }
     }
 
-    //public
-
     [Serializable]
     public class SpeckleBoolean : SpeckleObject
     {
