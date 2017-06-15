@@ -163,7 +163,7 @@ namespace SpeckleCommon
                 List<SpeckleObject> payload = new List<SpeckleObject>();
                 convertedObjs.All(o =>
                 {
-                    if(o == null)
+                    if (o == null)
                     {
                         payload.Add(new SpeckleObject("invalid_object", ""));
                         return true;
@@ -173,12 +173,13 @@ namespace SpeckleCommon
                     else
                     if (myCache.isInCache(o.hash))
                     {
-                            payload.Add(new SpeckleObject(o.type, o.hash));
+                        payload.Add(new SpeckleObject(o.type, o.hash));
                     }
                     else
                     {
                         payload.Add(o);
-                        myCache.addToStage(o.hash, o);
+                        if (SpeckleConverter.heavyTypes.Contains(o.type))
+                            myCache.addToStage(o.hash, o);
                     }
 
                     return true;

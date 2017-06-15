@@ -259,7 +259,7 @@ namespace SpeckleCommon
 
         public void getObject(dynamic obj, dynamic objectProperties, int index, Action<object, int> callback)
         {
-            if (!converter.hashedTypes.Contains((string)obj.type))
+            if (!SpeckleConverter.heavyTypes.Contains((string)obj.type))
             {
                 callback(converter.encodeObject(obj, objectProperties), index);
                 return;
@@ -274,7 +274,7 @@ namespace SpeckleCommon
                 return;
             }
 
-            server.getGeometry((string)obj.hash, converter.encodedTypes.Contains((string)obj.type) ? "native":"", (success, response) =>
+            server.getGeometry((string)obj.hash, SpeckleConverter.encodedTypes.Contains((string)obj.type) ? "native":"", (success, response) =>
             {
                 if(!success)
                 {

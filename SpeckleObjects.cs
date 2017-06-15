@@ -102,6 +102,7 @@ namespace SpeckleCommon
         {
             type = "Point";
             value[0] = x; value[1] = y; value[2] = z;
+            hash = "Point." + SpeckleConverter.getHash(x + "" + y + "" + z);
         }
     }
 
@@ -116,6 +117,7 @@ namespace SpeckleCommon
         {
             type = "Vector";
             value[0] = x; value[1] = y; value[2] = z;
+            hash = "Vector."  + SpeckleConverter.getHash( x + "" + y + "" + z);
         }
 
     }
@@ -135,6 +137,7 @@ namespace SpeckleCommon
             this.normal = normal;
             this.xdir = xdir;
             this.ydir = ydir;
+            hash = "Plane." + SpeckleConverter.getHash(origin.hash + normal.hash + xdir.hash + ydir.hash);
         }
     }
 
@@ -151,6 +154,7 @@ namespace SpeckleCommon
             type = "Line";
             this.start = start;
             this.end = end;
+            hash = "Line." + SpeckleConverter.getHash(start.hash + end.hash);
         }
     }
 
@@ -171,6 +175,7 @@ namespace SpeckleCommon
             this.b = b;
             this.c = c;
             this.d = d;
+            hash = "Rectangle." + SpeckleConverter.getHash(a.hash + b.hash + c.hash + d.hash);
         }
     }
 
@@ -188,6 +193,7 @@ namespace SpeckleCommon
             this.center = center;
             this.normal = normal;
             this.radius = radius;
+            hash = "Circle." + SpeckleConverter.getHash(radius + center.hash + normal.hash);
         }
     }
 
@@ -205,6 +211,7 @@ namespace SpeckleCommon
             this.xSize = xSize;
             this.ySize = ySize;
             this.zSize = zSize;
+            hash = "Box." + SpeckleConverter.getHash(basePlane.hash + xSize.start + xSize.end + ySize.start + ySize.end);
         }
     }
 
