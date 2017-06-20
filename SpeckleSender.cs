@@ -161,6 +161,7 @@ namespace SpeckleCommon
                 dynamic x = new ExpandoObject();
                 List<SpeckleObject> convertedObjs = converter.convert(this.objects);
                 List<SpeckleObject> payload = new List<SpeckleObject>();
+
                 convertedObjs.All(o =>
                 {
                     if (o == null)
@@ -168,10 +169,12 @@ namespace SpeckleCommon
                         payload.Add(new SpeckleObject("invalid_object", ""));
                         return true;
                     }
+
                     if (o.hash == null)
+                    { 
                         payload.Add(o);
-                    else
-                    if (myCache.isInCache(o.hash))
+                    }
+                    else if (myCache.isInCache(o.hash))
                     {
                         payload.Add(new SpeckleObject(o.type, o.hash));
                     }
