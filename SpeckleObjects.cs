@@ -13,7 +13,10 @@ namespace SpeckleCommon
         public string type { get; set; }
         public string hash { get; set; }
 
+        public Dictionary<string, object> properties;
+
         public SpeckleObject() { }
+
         public SpeckleObject(string type, string hash)
         {
             this.type = type; this.hash = hash;
@@ -32,6 +35,16 @@ namespace SpeckleCommon
             type = "Boolean";
             value = val;
         }
+
+        static public implicit operator SpeckleBoolean(bool value)
+        {
+            return new SpeckleBoolean(value);
+        }
+
+        static public implicit operator bool(SpeckleBoolean myBoolean)
+        {
+            return myBoolean.value;
+        }
     }
 
     [Serializable]
@@ -46,6 +59,21 @@ namespace SpeckleCommon
             type = "Number";
             value = val;
         }
+
+        static public implicit operator SpeckleNumber(int val)
+        {
+            return new SpeckleNumber(val);
+        }
+
+        static public implicit operator SpeckleNumber(double val)
+        {
+            return new SpeckleNumber(val);
+        }
+
+        static public implicit operator double(SpeckleNumber num)
+        {
+            return num.value;
+        }
     }
 
     [Serializable]
@@ -59,6 +87,16 @@ namespace SpeckleCommon
         {
             type = "String";
             value = val;
+        }
+
+        static public implicit operator SpeckleString(string str)
+        {
+            return new SpeckleString(str);
+        }
+
+        static public implicit operator string(SpeckleString str)
+        {
+            return str.value;
         }
     }
 
@@ -96,13 +134,16 @@ namespace SpeckleCommon
     {
         public double[] value = new double[3];
 
+
         public SpecklePoint() { }
 
-        public SpecklePoint(double x, double y, double z)
+        public SpecklePoint(double x, double y, double z, Dictionary<string, object> props = null)
         {
             type = "Point";
             value[0] = x; value[1] = y; value[2] = z;
             hash = "Point." + SpeckleConverter.getHash(x + "" + y + "" + z);
+
+            if (props != null) properties = props;
         }
     }
 
@@ -117,7 +158,7 @@ namespace SpeckleCommon
         {
             type = "Vector";
             value[0] = x; value[1] = y; value[2] = z;
-            hash = "Vector."  + SpeckleConverter.getHash( x + "" + y + "" + z);
+            hash = "Vector." + SpeckleConverter.getHash(x + "" + y + "" + z);
         }
 
     }
@@ -147,14 +188,16 @@ namespace SpeckleCommon
         public SpecklePoint start { get; set; }
         public SpecklePoint end { get; set; }
 
-        public SpeckleLine() {  }
+        public SpeckleLine() { }
 
-        public SpeckleLine(SpecklePoint start, SpecklePoint end)
+        public SpeckleLine(SpecklePoint start, SpecklePoint end, Dictionary<string, object> props = null)
         {
             type = "Line";
             this.start = start;
             this.end = end;
             hash = "Line." + SpeckleConverter.getHash(start.hash + end.hash);
+
+            if (props != null) properties = props;
         }
     }
 
@@ -168,7 +211,7 @@ namespace SpeckleCommon
 
         public SpeckleRectangle() { }
 
-        public SpeckleRectangle(SpecklePoint a, SpecklePoint b, SpecklePoint c, SpecklePoint d)
+        public SpeckleRectangle(SpecklePoint a, SpecklePoint b, SpecklePoint c, SpecklePoint d, Dictionary<string, object> props = null)
         {
             type = "Rectangle";
             this.a = a;
@@ -176,6 +219,8 @@ namespace SpeckleCommon
             this.c = c;
             this.d = d;
             hash = "Rectangle." + SpeckleConverter.getHash(a.hash + b.hash + c.hash + d.hash);
+
+            if (props != null) properties = props;
         }
     }
 
@@ -232,7 +277,7 @@ namespace SpeckleCommon
 
 
     [Serializable]
-    public class SpeckleCurve: SpeckleObject
+    public class SpeckleCurve : SpeckleObject
     {
         public SpecklePolyline displayValue { get; set; }
         public string base64 { get; set; }
@@ -287,5 +332,4 @@ namespace SpeckleCommon
             this.hash = type + "." + SpeckleConverter.getHash(mesh);
         }
     }
-
 }

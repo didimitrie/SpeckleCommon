@@ -91,7 +91,7 @@ namespace SpeckleCommon
         /// Encodes a serialisable object in base64 string.
         /// </summary>
         /// <param name="obj"></param>
-        /// <returns></returns>
+        /// <returns><d/returns>
         public static string getBase64(object obj)
         {
             using (MemoryStream ms = new MemoryStream())
