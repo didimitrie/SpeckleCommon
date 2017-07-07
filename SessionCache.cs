@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SpeckleCommon
 {
@@ -18,53 +15,53 @@ namespace SpeckleCommon
     // its metadata (type and hash)
     public class SessionCache
     {
-        HashSet<string> cacheHashes;
-        HashSet<string> stageHashes;
-        Dictionary<string, object> cacheObjects;
-        Dictionary<string, object> stagedObjects;
+        HashSet<string> CacheHashes;
+        HashSet<string> StageHashes;
+        Dictionary<string, object> CacheObjects;
+        Dictionary<string, object> StagedObjects;
 
         public SessionCache()
         {
-            cacheHashes = new HashSet<string>();
-            stageHashes = new HashSet<string>();
-            cacheObjects = new Dictionary<string, object>();
-            stagedObjects = new Dictionary<string, object>();
+            CacheHashes = new HashSet<string>();
+            StageHashes = new HashSet<string>();
+            CacheObjects = new Dictionary<string, object>();
+            StagedObjects = new Dictionary<string, object>();
         }
 
-        public bool isInCache(string hash)
+        public bool IsInCache(string hash)
         {
-            return cacheHashes.Contains(hash);
+            return CacheHashes.Contains(hash);
         }
 
-        public bool getFromCache(string hash, ref object obj)
+        public bool GetFromCache(string hash, ref object obj)
         {
-            if (cacheHashes.Contains(hash))
+            if (CacheHashes.Contains(hash))
             {
-                obj = cacheObjects[hash];
+                obj = CacheObjects[hash];
                 return true;
             }
             return false;
         }
 
-        public void addToStage(string hash, object o)
+        public void AddToStage(string hash, object o)
         {
-            if (stageHashes.Add(hash))
-                stagedObjects.Add(hash, o);
+            if (StageHashes.Add(hash))
+                StagedObjects.Add(hash, o);
         }
 
-        public void addToCache(string hash, object o)
+        public void AddToCache(string hash, object o)
         {
-            if (cacheHashes.Add(hash))
-                cacheObjects.Add(hash, o);
+            if (CacheHashes.Add(hash))
+                CacheObjects.Add(hash, o);
         }
 
-        public void commitStage()
+        public void CommitStage()
         {
-            cacheHashes.UnionWith(stageHashes);
-            stageHashes = new HashSet<string>();
+            CacheHashes.UnionWith(StageHashes);
+            StageHashes = new HashSet<string>();
 
-            cacheObjects.Union(stagedObjects);
-            stagedObjects = new Dictionary<string, object>();
+            CacheObjects.Union(StagedObjects);
+            StagedObjects = new Dictionary<string, object>();
         }
     }
 }

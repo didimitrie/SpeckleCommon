@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace SpeckleCommon
 {
@@ -14,8 +12,8 @@ namespace SpeckleCommon
     public abstract class SpeckleConverter
     {
 
-        public static string[] heavyTypes = new string[] { "Polyline", "Curve", "Mesh", "Brep" };
-        public static string[] encodedTypes = new string[] { "Curve", "Brep" };
+        public static string[] HeavyTypes = new string[] { "Polyline", "Curve", "Mesh", "Brep" };
+        public static string[] EncodedTypes = new string[] { "Curve", "Brep" };
 
         public SpeckleConverter()
         {
@@ -30,17 +28,17 @@ namespace SpeckleCommon
         /// <param name="getEncoded">If true, should return a base64 encoded version of the object as well.</param>
         /// <param name="getAbstract">If set to false will not return speckle-parsable values for objects.</param>
         /// <returns>A list of dynamic objects.</returns>
-        abstract public List<SpeckleObject> convert(IEnumerable<object> objects);
+        abstract public List<SpeckleObject> Convert(IEnumerable<object> objects);
 
         /// <summary>
         /// Async conversion of a list of objects. Returns the result in a callback.
         /// </summary>
         /// <param name="objects">Objects to convert.</param>
         /// <param name="callback">Action to perform with the converted objects.</param>
-        abstract public void convertAsync(IEnumerable<object> objects, Action<List<SpeckleObject>> callback);
+        abstract public void ConvertAsync(IEnumerable<object> objects, Action<List<SpeckleObject>> callback);
 
 
-        abstract public List<SpeckleObjectProperties> getObjectProperties(IEnumerable<object> objects);
+        abstract public List<SpeckleObjectProperties> GetObjectProperties(IEnumerable<object> objects);
 
         #endregion
 
@@ -49,36 +47,36 @@ namespace SpeckleCommon
         /// </summary>
         /// <param name="myObj">object to encode to native.</param>
         /// <returns></returns>
-        abstract public object encodeObject(dynamic myObj, dynamic objectProperties = null);
+        abstract public object EncodeObject(dynamic myObj, dynamic objectProperties = null);
 
         #region standard types: boolean, numbers, strings
 
-        public static SpeckleObject fromBoolean(bool b)
+        public static SpeckleObject FromBoolean(bool b)
         {
             return new SpeckleBoolean(b);
         }
 
-        public static bool toBoolean(dynamic b)
+        public static bool ToBoolean(dynamic b)
         {
             return b.value;
         }
 
-        public static SpeckleObject fromNumber(double num)
+        public static SpeckleObject FromNumber(double num)
         {
             return new SpeckleNumber(num);
         }
 
-        public static double toNumber(dynamic num)
+        public static double ToNumber(dynamic num)
         {
             return (double)num.value;
         }
 
-        public static SpeckleObject fromString(string str)
+        public static SpeckleObject FromString(string str)
         {
             return new SpeckleString(str);
         }
 
-        public static string toString(dynamic str)
+        public static string ToString(dynamic str)
         {
             return (string)str.value;
         }
@@ -92,12 +90,12 @@ namespace SpeckleCommon
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        public static string getBase64(object obj)
+        public static string GetBase64(object obj)
         {
             using (MemoryStream ms = new MemoryStream())
             {
                 new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter().Serialize(ms, obj);
-                return Convert.ToBase64String(ms.ToArray());
+                return System.Convert.ToBase64String(ms.ToArray());
             }
         }
 
@@ -106,7 +104,7 @@ namespace SpeckleCommon
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        public static byte[] getBytes(object obj)
+        public static byte[] GetBytes(object obj)
         {
             using (MemoryStream ms = new MemoryStream())
             {
@@ -115,13 +113,13 @@ namespace SpeckleCommon
             }
         }
 
-        public static string getHash(object obj)
+        public static string GetHash(object obj)
         {
-            byte[] b = getBytes(obj);
-            return getHash(b);
+            byte[] b = GetBytes(obj);
+            return GetHash(b);
         }
 
-        public static string getHash(byte[] b)
+        public static string GetHash(byte[] b)
         {
             byte[] hash;
             using (System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create())
@@ -140,7 +138,7 @@ namespace SpeckleCommon
         /// </summary>
         /// <param name="str">What to hash.</param>
         /// <returns>a lowercase string of the md5 hash.</returns>
-        public static string getHash(string str)
+        public static string GetHash(string str)
         {
             byte[] hash;
             using (System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create())
@@ -154,14 +152,14 @@ namespace SpeckleCommon
             }
         }
 
-        public static object getObjFromString(string base64String)
+        public static object GetObjFromString(string base64String)
         {
             if (base64String == null) return null;
-            byte[] bytes = Convert.FromBase64String(base64String);
-            return getObjFromBytes(bytes);
+            byte[] bytes = System.Convert.FromBase64String(base64String);
+            return GetObjFromBytes(bytes);
         }
 
-        public static object getObjFromBytes( byte[] bytes )
+        public static object GetObjFromBytes( byte[] bytes )
         {
             using (MemoryStream ms = new MemoryStream(bytes, 0, bytes.Length))
             {
@@ -177,6 +175,6 @@ namespace SpeckleCommon
         /// Spits out a string descriptor, ie "grasshopper-converter", or "rhino-converter". Used for reiniatisation of the API Proxy.
         /// </summary>
         /// <returns></returns>
-        abstract public dynamic description();
+        abstract public dynamic Description();
     }
 }

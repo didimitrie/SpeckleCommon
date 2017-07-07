@@ -1,12 +1,8 @@
 ﻿using Newtonsoft.Json;
-using RestSharp;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using WebSocketSharp;
 
 namespace SpeckleCommon
@@ -14,24 +10,24 @@ namespace SpeckleCommon
     public class SpeckleSender
     {
         // connectivity:
-        SpeckleServer server;
-        WebSocket ws;
+        SpeckleServer Server;
+        WebSocket Ws;
 
         // buckets:
-        List<SpeckleLayer> layers;
-        List<object> objects;
-        string name;
+        List<SpeckleLayer> Layers;
+        List<object> Objects;
+        string Name;
 
         // converer:
-        SpeckleConverter converter;
+        SpeckleConverter Converter;
 
         // timers:
-        int dataDebounceInterval = 1000;
-        int reconnDebounceInterval = 1000;
-        int metaDebounceInterval = 750;
+        int DataDebounceInterval = 1000;
+        int ReconnDebounceInterval = 1000;
+        int MetaDebounceInterval = 750;
 
-        System.Timers.Timer isReadyCheck;
-        System.Timers.Timer wsReconnecter;
+        System.Timers.Timer IsReadyCheck;
+        System.Timers.Timer WsReconnecter;
         System.Timers.Timer DataSender;
         System.Timers.Timer MetadataSender;
 
@@ -51,7 +47,7 @@ namespace SpeckleCommon
         public event SpeckleEvents OnError;
 
 
-        SessionCache myCache;
+        SessionCache Cache;
 
         #region constructors
 
@@ -61,20 +57,20 @@ namespace SpeckleCommon
         /// <param name="_server">Speckle Server to connect to.</param>
         public SpeckleSender(string apiUrl, string token, SpeckleConverter _converter, string documentId = null, string documentName = null)
         {
-            converter = _converter;
+            Converter = _converter;
 
-            server = new SpeckleServer(apiUrl, token);
+            Server = new SpeckleServer(apiUrl, token);
 
-            myCache = new SessionCache();
+            Cache = new SessionCache();
 
-            this.server.OnError += (sender, e) =>
+            Server.OnError += (sender, e) =>
             {
-                this.OnError?.Invoke(this, new SpeckleEventArgs(e.EventInfo));
+                OnError?.Invoke(this, new SpeckleEventArgs(e.EventInfo));
             };
 
-            server.OnReady += (e, data) =>
+            Server.OnReady += (e, data) =>
             {
-                this.setup();
+                Setup();
             };
         }
 
@@ -86,49 +82,49 @@ namespace SpeckleCommon
         {
             dynamic description = JsonConvert.DeserializeObject(serialisedObject);
 
-            server = new SpeckleServer((string)description.restEndpoint, (string)description.token, (string)description.streamId);
+            Server = new SpeckleServer((string)description.restEndpoint, (string)description.token, (string)description.streamId);
 
-            myCache = new SessionCache();
+            Cache = new SessionCache();
 
-            this.server.OnError += (sender, e) =>
+            Server.OnError += (sender, e) =>
             {
-                this.OnError?.Invoke(this, new SpeckleEventArgs(e.EventInfo));
+                OnError?.Invoke(this, new SpeckleEventArgs(e.EventInfo));
             };
 
-            this.server.OnReady += (sender, e) =>
+            Server.OnReady += (sender, e) =>
             {
-                this.setup();
+                Setup();
             };
 
-            converter = _converter;
+            Converter = _converter;
         }
 
         #endregion
 
         #region main setup calls
 
-        private void setup()
+        private void Setup()
         {
-            if (server.streamId == null)
-                server.createNewStream((success, data) =>
+            if (Server.StreamId == null)
+                Server.CreateNewStream((success, data) =>
                 {
                     if (!success)
                     {
                         OnError?.Invoke(this, new SpeckleEventArgs("Failed to create stream."));
                         return;
                     }
-                    server.streamId = data.streamId;
-                    setupWebsocket();
+                    Server.StreamId = data.streamId;
+                    SetupWebsocket();
                 });
             else
-                server.getStream((success, data) =>
+                Server.GetStream((success, data) =>
                 {
                     if (!success)
                     {
                         OnError?.Invoke(this, new SpeckleEventArgs("Failed to retrieve stream."));
                         return;
                     }
-                    setupWebsocket();
+                    SetupWebsocket();
                 });
 
             // start the is ready checker timer.
@@ -136,30 +132,36 @@ namespace SpeckleCommon
             // a) we have a valid stream id (means we've contacted the server sucessfully)
             // && b) we have a live wsSessionId (means sockets were correctly initialised)
 
-            isReadyCheck = new System.Timers.Timer(150);
-            isReadyCheck.AutoReset = false; isReadyCheck.Enabled = true;
-            isReadyCheck.Elapsed += (sender, e) =>
+            IsReadyCheck = new System.Timers.Timer(150)
             {
-                if (server.streamId == null) { isReadyCheck.Start(); return; }
-                if (server.wsSessionId == null) { isReadyCheck.Start(); return; }
+                AutoReset = false,
+                Enabled = true
+            };
+            IsReadyCheck.Elapsed += (sender, e) =>
+            {
+                if (Server.StreamId == null) { IsReadyCheck.Start(); return; }
+                if (Server.WsSessionId == null) { IsReadyCheck.Start(); return; }
 
                 dynamic data = new ExpandoObject();
-                data.streamId = server.streamId;
-                data.wsSessionId = server.wsSessionId;
+                data.streamId = Server.StreamId;
+                data.wsSessionId = Server.WsSessionId;
 
                 OnReady?.Invoke(this, new SpeckleEventArgs("sender ready", data));
             };
 
             // data sender debouncer
-            DataSender = new System.Timers.Timer(dataDebounceInterval);
-            DataSender.AutoReset = false; DataSender.Enabled = false;
+            DataSender = new System.Timers.Timer(DataDebounceInterval)
+            {
+                AutoReset = false,
+                Enabled = false
+            };
             DataSender.Elapsed +=
             (sender, e) =>
             {
                 Debug.WriteLine("SPKSENDER: Sending data payload.");
 
                 dynamic x = new ExpandoObject();
-                List<SpeckleObject> convertedObjs = converter.convert(this.objects);
+                List<SpeckleObject> convertedObjs = Converter.Convert(Objects);
                 List<SpeckleObject> payload = new List<SpeckleObject>();
                 convertedObjs.All(o =>
                 {
@@ -168,18 +170,18 @@ namespace SpeckleCommon
                         payload.Add(new SpeckleObject("invalid_object", ""));
                         return true;
                     }
-                    if (o.hash == null)
+                    if (o.Hash == null)
                         payload.Add(o);
                     else
-                    if (myCache.isInCache(o.hash))
+                    if (Cache.IsInCache(o.Hash))
                     {
-                        payload.Add(new SpeckleObject(o.type, o.hash));
+                        payload.Add(new SpeckleObject(o.Type, o.Hash));
                     }
                     else
                     {
                         payload.Add(o);
-                        if (SpeckleConverter.heavyTypes.Contains(o.type))
-                            myCache.addToStage(o.hash, o);
+                        if (SpeckleConverter.HeavyTypes.Contains(o.Type))
+                            Cache.AddToStage(o.Hash, o);
                     }
 
                     return true;
@@ -187,11 +189,11 @@ namespace SpeckleCommon
 
 
                 x.objects = payload;
-                x.objectProperties = converter.getObjectProperties(this.objects);
-                x.layers = layers;
-                x.streamName = name;
+                x.objectProperties = Converter.GetObjectProperties(Objects);
+                x.layers = Layers;
+                x.streamName = Name;
 
-                server.updateStream(x as ExpandoObject, (success, data) =>
+                Server.UpdateStream(x as ExpandoObject, (success, data) =>
                 {
                     if (!success)
                     {
@@ -200,7 +202,7 @@ namespace SpeckleCommon
                     }
 
                     // only commit to the cache if we had a positive res from the api
-                    myCache.commitStage();
+                    Cache.CommitStage();
 
                     OnDataSent?.Invoke(this, new SpeckleEventArgs("Stream was updated."));
                 });
@@ -208,17 +210,20 @@ namespace SpeckleCommon
             };
 
             // metadata sender debouncer
-            MetadataSender = new System.Timers.Timer(metaDebounceInterval);
-            MetadataSender.AutoReset = false; MetadataSender.Enabled = false;
+            MetadataSender = new System.Timers.Timer(MetaDebounceInterval)
+            {
+                AutoReset = false,
+                Enabled = false
+            };
             MetadataSender.Elapsed += (sender, e) =>
             {
                 Debug.WriteLine("SPKSENDER: Sending meta payload.");
 
                 dynamic payload = new ExpandoObject();
-                payload.layers = layers;
-                payload.streamName = name;
+                payload.layers = Layers;
+                payload.streamName = Name;
 
-                server.updateStreamMetadata(payload as ExpandoObject, (success, response) =>
+                Server.UpdateStreamMetadata(payload as ExpandoObject, (success, response) =>
                 {
                     if (!success)
                     {
@@ -231,42 +236,45 @@ namespace SpeckleCommon
 
         }
 
-        private void setupWebsocket()
+        private void SetupWebsocket()
         {
-            wsReconnecter = new System.Timers.Timer(reconnDebounceInterval);
-            wsReconnecter.AutoReset = false; wsReconnecter.Enabled = false;
-            wsReconnecter.Elapsed += (sender, e) =>
+            WsReconnecter = new System.Timers.Timer(ReconnDebounceInterval)
             {
-                ws.Connect();
+                AutoReset = false,
+                Enabled = false
+            };
+            WsReconnecter.Elapsed += (sender, e) =>
+            {
+                Ws.Connect();
             };
 
-            ws = new WebSocket(server.wsEndpoint + "?access_token=" + server.token);
+            Ws = new WebSocket(Server.WsEndpoint + "?access_token=" + Server.Token);
 
-            ws.OnOpen += (sender, e) =>
+            Ws.OnOpen += (sender, e) =>
             {
-                wsReconnecter.Stop();
-                ws.Send(JsonConvert.SerializeObject(new { eventName = "join-stream", args = new { streamid = server.streamId, role = "sender" } }));
+                WsReconnecter.Stop();
+                Ws.Send(JsonConvert.SerializeObject(new { eventName = "join-stream", args = new { streamid = Server.StreamId, role = "sender" } }));
             };
 
-            ws.OnClose += (sender, e) =>
+            Ws.OnClose += (sender, e) =>
             {
-                wsReconnecter.Start();
-                server.wsSessionId = null;
-                this.OnError?.Invoke(this, new SpeckleEventArgs("Disconnected from server."));
+                WsReconnecter.Start();
+                Server.WsSessionId = null;
+                OnError?.Invoke(this, new SpeckleEventArgs("Disconnected from server."));
             };
 
-            ws.OnMessage += (sender, e) =>
+            Ws.OnMessage += (sender, e) =>
             {
                 if (e.Data == "ping")
                 {
-                    ws.Send("alive");
+                    Ws.Send("alive");
                     return;
                 }
                 dynamic message = JsonConvert.DeserializeObject(e.Data);
 
                 if (message.eventName == "ws-session-id")
                 {
-                    server.wsSessionId = message.sessionId;
+                    Server.WsSessionId = message.sessionId;
                     return;
                 }
 
@@ -282,7 +290,7 @@ namespace SpeckleCommon
                 }
             };
 
-            ws.Connect();
+            Ws.Connect();
         }
 
         #endregion
@@ -295,11 +303,11 @@ namespace SpeckleCommon
         /// <param name="_objects">List of objects to convert and send.</param>
         /// <param name="_layers">List of layers.</param>
         /// <param name="_name">The name of the stream.</param>
-        public void sendDataUpdate(List<dynamic> _objects, List<SpeckleLayer> _layers, string _name)
+        public void SendDataUpdate(List<dynamic> _objects, List<SpeckleLayer> _layers, string _name)
         {
-            this.objects = _objects;
-            this.layers = _layers;
-            this.name = _name;
+            Objects = _objects;
+            Layers = _layers;
+            Name = _name;
 
             // in case there is a metadata update in progress
             MetadataSender.Stop();
@@ -313,10 +321,10 @@ namespace SpeckleCommon
         /// </summary>
         /// <param name="layers">List of layers.</param>
         /// <param name="_name">The name of the stream.</param>
-        public void sendMetadataUpdate(List<SpeckleLayer> layers, string _name)
+        public void SendMetadataUpdate(List<SpeckleLayer> layers, string _name)
         {
-            this.layers = layers;
-            this.name = _name;
+            Layers = layers;
+            Name = _name;
 
             MetadataSender.Start();
         }
@@ -325,9 +333,9 @@ namespace SpeckleCommon
         /// Saves instance to the stream history.
         /// </summary>
         /// <param name="name">A specific name to save it by.</param>
-        public void saveToHistory(string name = "History")
+        public void SaveToHistory(string name = "History")
         {
-            server.createNewStreamHistory((success, data) =>
+            Server.CreateNewStreamHistory((success, data) =>
             {
                 if (!success)
                 {
@@ -342,14 +350,14 @@ namespace SpeckleCommon
         /// Returns the id to which this sender sends data.
         /// </summary>
         /// <returns></returns>
-        public string getStreamId()
+        public string GetStreamId()
         {
-            return server.streamId;
+            return Server.StreamId;
         }
 
-        public string getServer()
+        public string GetServer()
         {
-            return server.restEndpoint;
+            return Server.RestEndpoint;
         }
 
         #endregion;
@@ -359,14 +367,14 @@ namespace SpeckleCommon
         /// Sends a volatile message that will be broadcast to this stream's clients.
         /// </summary>
         /// <param name="message">Message to broadcast.</param>
-        public void broadcastVolatileMessage(string message)
+        public void BroadcastVolatileMessage(string message)
         {
-            this.ws.Send(JsonConvert.SerializeObject(new { eventName = "volatile-broadcast", args = message }));
+            Ws.Send(JsonConvert.SerializeObject(new { eventName = "volatile-broadcast", args = message }));
         }
 
-        public void sendVolatileMessage(string message, string socketId)
+        public void SendVolatileMessage(string message, string socketId)
         {
-            this.ws.Send(JsonConvert.SerializeObject(new { eventName = "volatile-message", args = message }));
+            Ws.Send(JsonConvert.SerializeObject(new { eventName = "volatile-message", args = message }));
         }
         #endregion
 
@@ -374,10 +382,10 @@ namespace SpeckleCommon
         {
             dynamic description = new
             {
-                restEndpoint = server.restEndpoint,
-                wsEndpoint = server.wsEndpoint,
-                streamId = server.streamId,
-                token = server.token
+                restEndpoint = Server.RestEndpoint,
+                wsEndpoint = Server.WsEndpoint,
+                streamId = Server.StreamId,
+                token = Server.Token
             };
 
             return JsonConvert.SerializeObject(description);
@@ -393,11 +401,11 @@ namespace SpeckleCommon
                 //server.apiCall(@"/api/stream", Method.DELETE, etc, etc) 
             }
 
-            if (ws != null) ws.Close();
+            if (Ws != null) Ws.Close();
             if (DataSender != null) DataSender.Dispose();
             if (MetadataSender != null) MetadataSender.Dispose();
-            if (wsReconnecter != null) wsReconnecter.Dispose();
-            if (isReadyCheck != null) isReadyCheck.Dispose();
+            if (WsReconnecter != null) WsReconnecter.Dispose();
+            if (IsReadyCheck != null) IsReadyCheck.Dispose();
         }
     }
 }

@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Dynamic;
-using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SpeckleCommon
 {
@@ -15,26 +11,29 @@ namespace SpeckleCommon
     [Serializable]
     public class SpeckleLayer
     {
-        public string name, guid, topology;
+        public string Name, Topology;
+
+        public Guid Uuid;
+
         /// <summary>
         /// How many objects does this layer hold.
         /// </summary>
-        public int objectCount;
+        public int ObjectCount;
 
         /// <summary>
         /// The list index of the first object this layer contains. 
         /// </summary>
-        public int startIndex;
+        public int StartIndex;
 
         /// <summary>
         /// Keeps track of the position of this layer in the layer stack.
         /// </summary>
-        public int orderIndex;
+        public int OrderIndex;
 
         /// <summary>
         /// Extra stuff one can set around.
         /// </summary>
-        public dynamic properties;
+        public dynamic Properties;
 
         /// <summary>
         /// Creates a new Speckle Layer.
@@ -47,10 +46,10 @@ namespace SpeckleCommon
         /// <param name="_objectCount">Number of objects this layer contains.</param>
         /// <param name="_startIndex">The index of the first object this layer contains from the global object list.</param>
         /// <param name="_properties">Extra properties, if you want to. Would be cool to have stuff like colours and materials in here.</param>
-        public SpeckleLayer(string _name, string _guid, string _topology, int _objectCount, int _startIndex, int _orderIndex, dynamic _properties = null)
+        public SpeckleLayer(string _name, Guid _guid, string _topology, int _objectCount, int _startIndex, int _orderIndex, dynamic _properties = null)
         {
-            name = _name; guid = _guid; topology = _topology; objectCount = _objectCount; startIndex = _startIndex; orderIndex = _orderIndex;
-            properties = _properties;
+            Name = _name; Uuid = _guid; Topology = _topology; ObjectCount = _objectCount; StartIndex = _startIndex; OrderIndex = _orderIndex;
+            Properties = _properties;
         }
 
         /// <summary>
@@ -59,7 +58,7 @@ namespace SpeckleCommon
         /// <param name="oldLayers"></param>
         /// <param name="newLayers"></param>
         /// <returns>A dynamic object containing the following lists: toRemove, toAdd and toUpdate. </returns>
-        public static dynamic diffLayers(List<SpeckleLayer> oldLayers, List<SpeckleLayer> newLayers)
+        public static dynamic DiffLayers(List<SpeckleLayer> oldLayers, List<SpeckleLayer> newLayers)
         {
             dynamic returnValue = new ExpandoObject();
             returnValue.toRemove = oldLayers.Except(newLayers, new SpeckleLayerComparer()).ToList();
@@ -74,10 +73,10 @@ namespace SpeckleCommon
         /// </summary>
         /// <param name="o">List to convert.</param>
         /// <returns></returns>
-        public static List<SpeckleLayer> fromExpandoList(IEnumerable<dynamic> o)
+        public static List<SpeckleLayer> FromExpandoList(IEnumerable<dynamic> o)
         {
             List<SpeckleLayer> list = new List<SpeckleLayer>();
-            foreach (var oo in o) list.Add(SpeckleLayer.fromExpando(oo));
+            foreach (var oo in o) list.Add(SpeckleLayer.FromExpando(oo));
             return list;
         }
 
@@ -86,9 +85,9 @@ namespace SpeckleCommon
         /// </summary>
         /// <param name="o">ExpandoObject to covnert.</param>
         /// <returns></returns>
-        public static SpeckleLayer fromExpando(dynamic o)
+        public static SpeckleLayer FromExpando(dynamic o)
         {
-            return new SpeckleLayer((string)o.name, (string)o.guid, (string)o.topology, (int)o.objectCount, (int)o.startIndex, (int)o.orderIndex, (dynamic)o.properties);
+            return new SpeckleLayer((string)o.name, (Guid)o.guid, (string)o.topology, (int)o.objectCount, (int)o.startIndex, (int)o.orderIndex, (dynamic)o.properties);
         }
 
     }
@@ -100,12 +99,12 @@ namespace SpeckleCommon
     {
         public bool Equals(SpeckleLayer x, SpeckleLayer y)
         {
-            return x.guid == y.guid;
+            return x.Uuid == y.Uuid;
         }
 
         public int GetHashCode(SpeckleLayer obj)
         {
-            return obj.guid.GetHashCode();
+            return obj.Uuid.GetHashCode();
         }
     }
 
@@ -146,13 +145,13 @@ namespace SpeckleCommon
     [Serializable]
     public class SpeckleObjectProperties
     {
-        public int objectIndex;
-        public object properties;
+        public int ObjectIndex;
+        public object Properties;
 
         public SpeckleObjectProperties(int _objectIndex, object _properties)
         {
-            objectIndex = _objectIndex;
-            properties = _properties;
+            ObjectIndex = _objectIndex;
+            Properties = _properties;
         }
     }
 
@@ -162,11 +161,11 @@ namespace SpeckleCommon
     [Serializable]
     public class SpeckleClientDocument
     {
-        public string documentGuid { get; set; }
-        public string documentName { get; set; }
+        public Guid DocumentGuid { get; set; }
+        public string DocumentName { get; set; }
         /// <summary>
         /// RH, GH, DYNAMO, etc.
         /// </summary>
-        public string documentType { get; set; }
+        public string DocumentType { get; set; }
     }
 }

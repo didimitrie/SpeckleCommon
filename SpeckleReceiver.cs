@@ -1,12 +1,8 @@
 ﻿using Newtonsoft.Json;
-using RestSharp;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Dynamic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using WebSocketSharp;
 
 namespace SpeckleCommon
@@ -14,24 +10,24 @@ namespace SpeckleCommon
     public class SpeckleReceiver
     {
         // connectivity:
-        SpeckleServer server;
-        WebSocket ws;
+        SpeckleServer Server;
+        WebSocket Ws;
 
         // converer:
-        SpeckleConverter converter;
+        SpeckleConverter Converter;
 
         // cache:
-        SessionCache myCache;
+        SessionCache Cache;
 
         //timers:
-        int reconnDebounceInterval = 1000;
+        int ReconnDebounceInterval = 1000;
 
         System.Timers.Timer isReadyCheck;
         System.Timers.Timer wsReconnecter;
 
         //first call stream
-        dynamic streamLiveInstance;
-        bool streamFound = false;
+        dynamic StreamLiveInstance;
+        bool StreamFound = false;
 
         /// <summary>
         /// Event emitted when everything is ready.
@@ -54,39 +50,39 @@ namespace SpeckleCommon
 
         public SpeckleReceiver(string apiUrl, string token, string streamId, SpeckleConverter _converter, string documentId = null, string documentName = null)
         {
-            converter = _converter;
+            Converter = _converter;
 
-            myCache = new SessionCache();
+            Cache = new SessionCache();
 
-            server = new SpeckleServer(apiUrl, token, streamId);
-            server.OnError += (sender, e) =>
+            Server = new SpeckleServer(apiUrl, token, streamId);
+            Server.OnError += (sender, e) =>
             {
-                this.OnError?.Invoke(this, new SpeckleEventArgs(e.EventInfo));
+                OnError?.Invoke(this, new SpeckleEventArgs(e.EventInfo));
             };
 
-            server.OnReady += (sender, e) =>
+            Server.OnReady += (sender, e) =>
             {
-                this.setup();
+                Setup();
             };
         }
 
         public SpeckleReceiver(string serialisedObject, SpeckleConverter _converter)
         {
             dynamic description = JsonConvert.DeserializeObject(serialisedObject);
-            server = new SpeckleServer((string)description.restEndpoint, (string)description.token, (string)description.streamId);
+            Server = new SpeckleServer((string)description.restEndpoint, (string)description.token, (string)description.streamId);
 
-            converter = _converter;
+            Converter = _converter;
 
-            myCache = new SessionCache();
+            Cache = new SessionCache();
 
-            server.OnError += (sender, e) =>
+            Server.OnError += (sender, e) =>
             {
-                this.OnError?.Invoke(this, new SpeckleEventArgs(e.EventInfo));
+                OnError?.Invoke(this, new SpeckleEventArgs(e.EventInfo));
             };
 
-            server.OnReady += (sender, e) =>
+            Server.OnReady += (sender, e) =>
             {
-                this.setup();
+                Setup();
             };
         }
 
@@ -94,18 +90,18 @@ namespace SpeckleCommon
 
         #region main setup calls
 
-        private void setup()
+        private void Setup()
         {
-            server.getStream((success, response) =>
+            Server.GetStream((success, response) =>
             {
                 if (!success)
                 {
                     OnError?.Invoke(this, new SpeckleEventArgs("Failed to retrieve stream."));
                     return;
                 }
-                streamFound = true;
-                streamLiveInstance = response; // this will fail!!!
-                setupWebsocket();
+                StreamFound = true;
+                StreamLiveInstance = response; // this will fail!!!
+                SetupWebsocket();
             });
 
             // ready is defined as: streamId exists && wsSessionId && streamWas found.
@@ -113,16 +109,17 @@ namespace SpeckleCommon
             isReadyCheck.AutoReset = false; isReadyCheck.Enabled = true;
             isReadyCheck.Elapsed += (sender, e) =>
             {
-                if (server.streamId == null) { isReadyCheck.Start(); return; }
-                if (server.wsSessionId == null) { isReadyCheck.Start(); return; }
-                if (!streamFound) { isReadyCheck.Start(); return; }
+                if (Server.StreamId == null) { isReadyCheck.Start(); return; }
+                if (Server.WsSessionId == null) { isReadyCheck.Start(); return; }
+                if (!StreamFound) { isReadyCheck.Start(); return; }
 
-                getObjects(streamLiveInstance as ExpandoObject, (castObjects) =>
+                GetObjects(StreamLiveInstance as ExpandoObject, (castObjects) =>
                 {
                     dynamic eventData = new ExpandoObject();
                     eventData.objects = castObjects;
-                    eventData.layers = SpeckleLayer.fromExpandoList(streamLiveInstance.layers);
-                    eventData.name = streamLiveInstance.name;
+                    eventData.layers = SpeckleLayer.FromExpandoList(StreamLiveInstance.layers);
+                    eventData.layerMaterials = SpeckleLayer.FromExpandoList(StreamLiveInstance.layerMaterials);
+                    eventData.name = StreamLiveInstance.name;
 
                     OnReady?.Invoke(this, new SpeckleEventArgs("receiver ready", eventData));
                 });
@@ -130,34 +127,34 @@ namespace SpeckleCommon
 
         }
 
-        private void setupWebsocket()
+        private void SetupWebsocket()
         {
-            wsReconnecter = new System.Timers.Timer(reconnDebounceInterval);
+            wsReconnecter = new System.Timers.Timer(ReconnDebounceInterval);
             wsReconnecter.AutoReset = false; wsReconnecter.Enabled = false;
             wsReconnecter.Elapsed += (sender, e) =>
             {
-                ws.Connect();
+                Ws.Connect();
             };
 
-            ws = new WebSocket(server.wsEndpoint + "?access_token=" + server.token);
+            Ws = new WebSocket(Server.WsEndpoint + "?access_token=" + Server.Token);
 
-            ws.OnOpen += (sender, e) =>
+            Ws.OnOpen += (sender, e) =>
             {
                 wsReconnecter.Stop();
-                ws.Send(JsonConvert.SerializeObject(new { eventName = "join-stream", args = new { streamid = server.streamId, role = "receiver" } }));
+                Ws.Send(JsonConvert.SerializeObject(new { eventName = "join-stream", args = new { streamid = Server.StreamId, role = "receiver" } }));
             };
 
-            ws.OnClose += (sender, e) =>
+            Ws.OnClose += (sender, e) =>
             {
                 wsReconnecter.Start();
-                server.wsSessionId = null;
+                Server.WsSessionId = null;
             };
 
-            ws.OnMessage += (sender, e) =>
+            Ws.OnMessage += (sender, e) =>
             {
                 if (e.Data == "ping")
                 {
-                    ws.Send("alive");
+                    Ws.Send("alive");
                     return;
                 }
 
@@ -165,7 +162,7 @@ namespace SpeckleCommon
 
                 if (message.eventName == "ws-session-id")
                 {
-                    server.wsSessionId = message.sessionId;
+                    Server.WsSessionId = message.sessionId;
                     return;
                 }
 
@@ -184,11 +181,11 @@ namespace SpeckleCommon
                 if (message.eventName == "live-update")
                 {
                     OnDataMessage?.Invoke(this, new SpeckleEventArgs("Received update notification."));
-                    getObjects(message.args as ExpandoObject, (castObjects) =>
+                    GetObjects(message.args as ExpandoObject, (castObjects) =>
                     {
                         dynamic eventData = new ExpandoObject();
                         eventData.objects = castObjects;
-                        eventData.layers = SpeckleLayer.fromExpandoList(message.args.layers);
+                        eventData.layers = SpeckleLayer.FromExpandoList(message.args.layers);
                         eventData.name = message.args.name;
 
                         OnData?.Invoke(this, new SpeckleEventArgs("live-update", eventData));
@@ -200,7 +197,7 @@ namespace SpeckleCommon
                 {
                     dynamic eventData = new ExpandoObject();
                     eventData.name = message.args.name;
-                    eventData.layers = SpeckleLayer.fromExpandoList(message.args.layers);
+                    eventData.layers = SpeckleLayer.FromExpandoList(message.args.layers);
                     OnMetadata?.Invoke(this, new SpeckleEventArgs("metadata-update", eventData));
                     return;
                 }
@@ -213,14 +210,14 @@ namespace SpeckleCommon
                 }
             };
 
-            ws.Connect();
+            Ws.Connect();
         }
 
         #endregion
 
         #region object getters
 
-        public void getObjects(dynamic liveUpdate, Action<List<object>> callback)
+        public void GetObjects(dynamic liveUpdate, Action<List<object>> callback)
         {
             // if stream contains no objects:
             if (liveUpdate.objects.Count == 0)
@@ -246,7 +243,7 @@ namespace SpeckleCommon
 
                 // TODO: Async doesn't guarantee object order.
                 // need to switch toa insertAt(k, obj) list, and pass that through politely to the guy below;
-                getObject(obj as ExpandoObject, prop as ExpandoObject, k, (encodedObject, index) =>
+                GetObject(obj as ExpandoObject, prop as ExpandoObject, k, (encodedObject, index) =>
                 {
                     castObjects[index] = encodedObject;
                     if (++insertionCount == (int)liveUpdate.objects.Count)
@@ -257,24 +254,24 @@ namespace SpeckleCommon
             }
         }
 
-        public void getObject(dynamic obj, dynamic objectProperties, int index, Action<object, int> callback)
+        public void GetObject(dynamic obj, dynamic objectProperties, int index, Action<object, int> callback)
         {
-            if (!SpeckleConverter.heavyTypes.Contains((string)obj.type))
+            if (!SpeckleConverter.HeavyTypes.Contains((string)obj.type))
             {
-                callback(converter.encodeObject(obj, objectProperties), index);
+                callback(Converter.EncodeObject(obj, objectProperties), index);
                 return;
             }
 
 
-            if (myCache.isInCache((string)obj.hash))
+            if (Cache.IsInCache((string)obj.hash))
             {
                 object cachedObj = null;
-                myCache.getFromCache((string)obj.hash, ref cachedObj);
+                Cache.GetFromCache((string)obj.hash, ref cachedObj);
                 callback(cachedObj, index);
                 return;
             }
 
-            server.getGeometry((string)obj.hash, SpeckleConverter.encodedTypes.Contains((string)obj.type) ? "native":"", (success, response) =>
+            Server.GetGeometry((string)obj.hash, SpeckleConverter.EncodedTypes.Contains((string)obj.type) ? "native":"", (success, response) =>
             {
                 if(!success)
                 {
@@ -282,27 +279,27 @@ namespace SpeckleCommon
                     return;
                 }
 
-                var castObject = converter.encodeObject(response.data, objectProperties);
+                var castObject = Converter.EncodeObject(response.data, objectProperties);
 
-                myCache.addToCache((string)obj.hash, castObject);
+                Cache.AddToCache((string)obj.hash, castObject);
 
                 callback(castObject, index);
             });
         }
 
-        public string getStreamId()
+        public string GetStreamId()
         {
-            return server.streamId;
+            return Server.StreamId;
         }
 
-        public string getServer()
+        public string GetServer()
         {
-            return server.restEndpoint;
+            return Server.RestEndpoint;
         }
 
-        public string getToken()
+        public string GetToken()
         {
-            return server.token;
+            return Server.Token;
         }
 
         #endregion
@@ -312,14 +309,14 @@ namespace SpeckleCommon
         /// Sends a volatile message that will be broadcast to this stream's clients.
         /// </summary>
         /// <param name="message">Message to broadcast.</param>
-        public void broadcastVolatileMessage(string message)
+        public void BroadcastVolatileMessage(string message)
         {
-            this.ws.Send(JsonConvert.SerializeObject(new { eventName = "volatile-broadcast", args = message }));
+            Ws.Send(JsonConvert.SerializeObject(new { eventName = "volatile-broadcast", args = message }));
         }
 
-        public void sendVolatileMessage(string message, string socketId)
+        public void SendVolatileMessage(string message, string socketId)
         {
-            this.ws.Send(JsonConvert.SerializeObject(new { eventName = "volatile-message", args = message }));
+            Ws.Send(JsonConvert.SerializeObject(new { eventName = "volatile-message", args = message }));
         }
         #endregion
 
@@ -328,10 +325,10 @@ namespace SpeckleCommon
             // look ma, json! XD c#
             dynamic description = new
             {
-                restEndpoint = server.restEndpoint,
-                wsEndpoint = server.wsEndpoint,
-                streamId = server.streamId,
-                token = server.token
+                restEndpoint = Server.RestEndpoint,
+                wsEndpoint = Server.WsEndpoint,
+                streamId = Server.StreamId,
+                token = Server.Token
             };
 
             return JsonConvert.SerializeObject(description);
@@ -344,7 +341,7 @@ namespace SpeckleCommon
                 //server.apiCall(@"/api/stream", Method.DELETE, etc, etc 
             }
 
-            if (ws != null) ws.Close();
+            if (Ws != null) Ws.Close();
             if (wsReconnecter != null) wsReconnecter.Dispose();
             if (isReadyCheck != null) isReadyCheck.Dispose();
         }
